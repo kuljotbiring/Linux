@@ -1,0 +1,40 @@
+
+sudo
+
+Short for “superuser do,” the sudo command allows a permitted user to execute a command as the superuser or another user, as specified in the sudoers file. It’s a crucial command for system administration, enabling users to execute potentially dangerous commands with elevated privileges, while also logging command usage for accountability. 
+chmod
+
+The chmod command is used to change the permissions of a file or directory. This is crucial for securing files and directories by controlling who can read, write, or execute them. For example, chmod 700 filename would give the owner read, write, and execute permissions, while all other users would have no permissions. 
+chown
+
+The chown command allows you to change the ownership of files and directories. This is another important tool for securing file and directory access. For example, chown user:group filename would change the ownership of the file to the specified user and group. 
+passwd
+
+The passwd command is used to change a user’s password. Regularly changing passwords is a fundamental practice in maintaining secure systems. 
+iptables
+
+A powerful firewall utility, the iptables command allows or blocks traffic based on the source and destination IP addresses, port numbers, and protocols. For example, iptables -A INPUT -p tcp –dport 22 -j DROP would drop all incoming TCP connections on port 22, effectively blocking SSH connections. 
+netstat
+
+The netstat command is a network utility that displays network connections, routing tables, and a number of network interface and network protocol statistics. It’s handy for monitoring incoming and outgoing network connections. 
+ss
+
+As a modern replacement for netstat, the ss command is faster and provides more information. It can display more TCP and state information than other tools. 
+fail2ban
+
+While not a command per se, the fail2ban service is an essential tool that protects your system from brute-force attacks. It monitors log files for too many failed login attempts and bans the offending IP addresses for a certain period. 
+ps
+
+The ps command is used to view active processes on a system. It’s a fundamental command for monitoring what’s running on your system and can be used in combination with other commands to kill unresponsive or malicious processes. 
+usermod
+
+The usermod command allows an administrator to modify a user account. This can include adding the user to a new group (which may have certain permissions), changing the user’s home directory, or even changing the username. 
+find
+
+While not specifically a security command, find is a powerful tool for locating files and directories. It can be used in conjunction with other commands to search for files with specific permissions or ownership. 
+history
+
+The history command displays the command history of the current user. It’s beneficial for auditing purposes, allowing you to see what commands have been run previously.  
+last
+
+The last command shows the last logins on the system. This can sometimes help to detect any unusual login activity. 
