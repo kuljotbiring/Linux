@@ -1,0 +1,328 @@
+sudo
+
+Running privileged commands with sudo  – instead of switching user to root  – is one essential good practice as it helps to ensure that you only use root privilege when needed and limits the impact of mistakes. Your access to the sudo command depends on settings in the /etc/sudoers and /etc/group files.
+
+$ sudo adduser shark
+Adding user `shark' ...
+Adding new group `shark' (1007) ...
+Adding new user `shark' (1007) with group `shark' ...
+Creating home directory `/home/shark' ...
+Copying files from `/etc/skel' ...
+Enter new UNIX password:
+Retype new UNIX password:
+passwd: password updated successfully
+Changing the user information for shark
+Enter the new value, or press ENTER for the default
+        Full Name []: shark
+        Room Number []:
+        Work Phone []:
+        Home Phone []:
+        Other []:
+Is the information correct? [Y/n] Y
+
+If you run sudo and ask who you are, for example, you’ll get confirmation that you’re running the command as root.
+
+$ sudo whoami
+root
+
+If you manage the sudo setup for users, you also need to be comfortable with the visudo command.
+
+visudo
+
+The visudo command allows you to make changes to the /etc/sudoers file by opening the file in a text editor and checking your changes for syntax. Run the command with “sudo visudo” and make sure that you understand the syntax. Privileges can be assigned by user or by group. On most Linux systems, the /etc/sudoers file will already be configured with groups like those shown below that allow the privileges to be assigned to groups set up in the /etc/group file. In those cases, you don’t need to use the visudo command at all  – just be familiar with the groups that bestow root privileges in this way, and make your updates to the /etc/group file.
+
+%admin ALL=(ALL) ALL
+%sudo ALL=(ALL:ALL) ALL
+%wheel ALL=(ALL:ALL) ALL
+
+Note that group names are preceded by the % sign.
+
+You can probably display the group providing sudo access in your /etc/group file like this since it is probably one of these:
+
+$ egrep "admin|sudo|wheel" /etc/group
+sudo:x:27:shs,jdoe
+
+The easiest way to give someone sudo privilege is to add them to the empowered group in /etc/group. However, that means that they can run any command as root. If you want some users to have root authority for a limited set of commands (e.g., adding and removing accounts) you can define the commands you want them to be able to run through a command alias like this:
+
+Cmnd_Alias ACCT_CMDS = /usr/sbin/adduser, /usr/sbin/deluser
+
+Then give the user or group the ability to run these commands using sudo with a command like one of these:
+
+nemo ALL=(ALL) ACCT_CMDS
+%techs  ALL=(ALL:ALL) ACCT_CMDS
+
+The first line allows the user “nemo” to run the two (adduser and deluser) commands with sudo while the second assigns the same privileges to anyone in the “tech” group in the /etc/group file.
+who and w
+
+The who and w commands show you who is logged into the system though w shows more information such as where they logged in from, when they logged in and how long they’ve been idle.
+
+$ w
+ 18:03:35 up 9 days, 22:48,  2 users,  load average: 0.00, 0.00, 0.00
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+joe      tty2     /dev/tty2        27Apr18  9days  7:34   0.09s /usr/lib/x86_64-linux
+shs      pts/1    192.168.0.15     09:50    7.00s  0.28s  0.00s w
+
+Use the “sudo update-alternatives  – config editor” command if you don’t like the default editor that’s called into play when you run the visudo command. It will offer a number of editors as options and change your setting.
+
+last
+
+The last command shows you recent logins for users and is often helpful when you’re trying to track down changes or other activity.
+
+$ last nemo
+nemo  pts/1   192.168.0.15   Wed May  2 07:01 - 08:29  (01:27)
+wtmp begins Tue May  1 10:21:35 2018
+
+Nemo hasn’t logged in for a while. He might be on vacation (maybe fishing?) or have just recently left the company. This kind of information can be useful in deciding whether you need to follow up on this.
+find
+
+The find command is used for many types of searches. When it comes to security, you might find yourself looking for files that have no owners (no corresponding accounts) or are both world-writable and executable. Find commands are easy to compose but require some familiarity with its many options for defining what you’re looking for. The first of these two commands will find files with no currently defined owners. The second will find files that likely anyone can both run and modify.
+
+$ sudo find /home -nouser
+$ sudo find / -perm -o=wx
+
+Keep in mind that the -o in the second command refers to the “other” group – not the owner and not the group associated with the files.
+
+file
+
+The file command looks at a file and determines what kind of file it is based on its contents, not its name. Many files (like jpeg files) contain identifiers near the beginnings of the files that identify them. The “.jpg” file in the example below is clearly not a true jpeg file but an executable  – in spite of its name.
+
+jdoe@stinkbug:~$ ls -l
+total 24
+-rw-r--r-- 1 root root     0 Apr 13 09:59 empty
+-rwxr-xr-x 1 jdoe jdoe 18840 May 10 17:39 myphoto.jpg
+-rwx------ 1 jdoe jdoe    24 May  2 07:06 trythis
+jdoe@stinkbug:~$ file myphoto.jpg
+myphoto.jpg: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=5d19f7a492405ea9b022a9aa8151f6fb4143633d, stripped
+
+which
+
+The which command identifies the executable that will be run when you type its name. This won’t always be what you think it is. If a Trojan has been inserted into the file system in a location that shows up in your search path before the legitimate one, it will be run instead. This is a good reason to ensure that your search path includes directories like /usr/bin before it adds less standard locations and especially before “.” (the current directory).
+
+$ which date
+/usr/local/bin/date 
+
+You can check a user’s search path by switching to the user and echoing it:
+
+shs@stinkbug:~$ sudo su - nemo
+nemo@stinkbug:~$ echo $PATH
+/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/snap/bin
+
+
+Even if users’ search paths are set up in a system file like /etc/profile or /etc/bash.bashrc, they may have been altered by local settings.
+
+$ which date
+/usr/local/bin/date	
+
+You can check a user’s search path by switching to the user and echoing it:
+
+shs@stinkbug:~$ sudo su - nemo
+nemo@stinkbug:~$ echo $PATH
+/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/snap/bin
+
+
+Even if users’ search paths are set up in a system file like /etc/profile or /etc/bash.bashrc, they may have been altered by local settings.
+
+ss
+
+The ss command is a tool for investigating sockets and allows you to do things like display listening ports and active connections. Without adding some constraints, ss is going to display a lot more information than you probably want to look at. After all, many parts of the operating system communicate via sockets. If you want to generate a list of established connections or listening ports (i.e., services available to external systems), commands like these will prove very useful.
+
+Established connections:
+
+$ ss -t
+State   Recv-Q Send-Q Local Address:Port     Peer Address:Port   
+ESTAB   0      224    192.168.0.20:ssh      192.168.0.15:56647
+
+$ ss | grep ESTAB | grep tcp
+tcp    ESTAB   0    64   192.168.0.20:ssh   192.168.0.15:64885
+
+
+Listening ports:
+
+$ ss -ltn
+State   Recv-Q Send-Q Local Address:Port     Peer Address:Port     
+LISTEN  0      128          *:22             *:*
+LISTEN  0      5      127.0.0.1:631          *:*                 
+LISTEN  0      50           *:445            *:*
+LISTEN  0      50           *:139            *:*
+LISTEN  0      128          *:5355           *:*
+LISTEN  0      128         :::22             :::*
+LISTEN  0      5          ::1:631            :::*
+LISTEN  0      50         :::445             :::*
+LISTEN  0      128        :::5355            :::*
+LISTEN  0      50         :::139             :::*
+
+
+Notice that port 631 (CUPS) is only listening on the loopback interface (127.0.0.1).
+
+ufw
+
+If you are running a firewall on your Linux system  – an important step for controlling access to the system, the commands used to start/stop, enable/disable, modify and display the status or active rules are critical. Here are some sample commands for ufw  – the "uncomplicated firewall" that you will find on many Ubuntu systems:
+
+$ sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22                         ALLOW IN    192.168.0.0/24
+
+
+This firewall is active and is allowing only connections from the local network to ssh in.
+
+The following commands would 1) set up the rule shown above and 2) disable the firewall.
+
+$ sudo ufw allow from 192.168.0.0/24 to any port 22
+$ sudo ufw disable
+
+
+iptables
+
+It's also important to know how to list firewall rules for iptables. These commands will provide you with a complete list of netfilter rules:
+
+sudo iptables -vL -t filter
+sudo iptables -vL -t nat
+sudo iptables -vL -t mangle
+sudo iptables -vL -t raw
+sudo iptables -vL -t security
+
+
+ip
+
+The ip command allows you to display information on your network interfaces. In the example below, we see the loopback and the public interface.
+
+$ ip a
+1: lo:  mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: enp0s25:  mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 00:1e:4f:c8:43:fc brd ff:ff:ff:ff:ff:ff
+    inet 192.168.0.20/24 brd 192.168.0.255 scope global dynamic enp0s25
+       valid_lft 59794sec preferred_lft 59794sec
+    inet6 fe80::f233:4f72:4556:14c2/64 scope link
+       valid_lft forever preferred_lft forever
+
+
+ip route
+
+The ip route command will display your routing table:
+
+$ ip route
+default via 192.168.0.1 dev enp0s25 proto static metric 100
+169.254.0.0/16 dev enp0s25 scope link metric 1000
+192.168.0.0/24 dev enp0s25 proto kernel scope link src 192.168.0.20 metric 100
+
+
+kill, pkill & killall
+
+As you can see in "There's more than one way to kill a Unix process", Unix and Linux systems offer a convenient selection of commands for terminating processes regardless of why you want them dead. You can kill by process ID or by name. You can kill singly or a group at a time. In any case, the various kill commands are at your disposal and you should be ready to use them as needed. Examples include:
+
+$ kill 1234
+$ pkill bad
+$ killall badproc
+
+
+passwd
+
+While the passwd command is probably an obvious one when it comes to system security, it's also one that shouldn't be omitted from any security-essentials list. Having a reasonable policy for password changes, especially as users come and go or change roles, is important.
+
+The passwd command isn't just used to change passwords, however. You can also use it with sudo privilege to change other users' passwords, lock/unlock or expire accounts, check account status and change the settings that determine when a password expires or time password warnings.
+
+Check the man page (man passwd) for details and use commands like these:
+
+$ sudo passwd nemo	
+pwck
+
+The pwck command does something of a sanity check on your /etc/passwd and /etc/shadow files  – making sure required fields are present, files and directories exist, etc.
+
+$ sudo pwck
+user 'squash': directory '/home/squash' does not exist
+user 'squash': program '/bin/bsh' does not exist
+
+
+setfacl & getfacl
+
+Don't let the easy display of rwxr-x--- type permissions lull you into imagining that this is all there is to file permissions on Linux systems. With setfacl and getfacl commands, you can give someone who isn't a file's owner and isn't a member of the associated group (and you don't want them to be) access to a file. Say you want nemo to have read access to a file outlining your ufw setup instructions file but nothing more. Use a command like this to modify the access control list (ACL) for the file:
+
+$ setfacl -m u:nemo:r ufw-setup
+
+
+The getfacl command will then display that the change was made:
+
+$ getfacl ufw-setup
+# file: ufw-setup
+# owner: shs
+# group: shs
+user::rwx
+user:nemo:r--        
+sestatus & apparmor
+
+The sestatus and apparmor commands can display the status of SELinux and apparmor tools that provide isolation between applications using mandatory access control. If you are using one or the other of these tools, you should know how to display their status.
+
+sestatus
+
+$ sudo sestatus
+SELinux status:                 enabled
+SELinuxfs mount:                /sys/fs/selinux
+SELinux root directory:         /etc/selinux
+Loaded policy name:             targeted
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy MLS status:              enabled
+Policy deny_unknown status:     allowed
+Max kernel policy version:      28
+
+
+apparmor
+
+$ sudo apparmor_status
+apparmor module is loaded.
+18 profiles are loaded.
+18 profiles are in enforce mode.
+   /sbin/dhclient
+   /usr/bin/evince
+   /usr/bin/evince-previewer
+   /usr/bin/evince-previewer//sanitized_helper
+   /usr/bin/evince-thumbnailer
+   /usr/bin/evince-thumbnailer//sanitized_helper
+   /usr/bin/evince//sanitized_helper
+   /usr/lib/NetworkManager/nm-dhcp-client.action
+   /usr/lib/NetworkManager/nm-dhcp-helper
+   /usr/lib/connman/scripts/dhclient-script
+   /usr/lib/cups/backend/cups-pdf
+   /usr/lib/snapd/snap-confine
+   /usr/lib/snapd/snap-confine//mount-namespace-capture-helper
+   /usr/sbin/cups-browsed
+   /usr/sbin/cupsd
+   /usr/sbin/cupsd//third_party
+   /usr/sbin/ippusbxd
+   /usr/sbin/tcpdump
+0 profiles are in complain mode.
+3 processes have profiles defined.
+3 processes are in enforce mode.
+   /sbin/dhclient (705)
+   /usr/sbin/cups-browsed (30173)
+   /usr/sbin/cupsd (26828)
+0 processes are in complain mode.
+0 processes are unconfined but have a profile defined.
+
+
+You should also know how to start and stop these tools.
+
+$ sudo /etc/init.d/apparmor start
+$ sudo /etc/init.d/apparmor stop
+$ sudo /etc/init.d/apparmor restart
+
+
+and, for SELinux, what the various modes represent:
+
+enforcing -- SELinux security policy is enforced
+permissive -- SELinux prints warnings instead of enforcing
+disabled -- SELinux is fully disabled
+
+
+Many commands on Linux systems can help you manage security. The descriptions above are meant to introduce these commands, but not to explain everything about how they work or can be used.
